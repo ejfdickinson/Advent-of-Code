@@ -20,8 +20,6 @@ def find_first_digit(s, check_for_spelled_digits=True):
                     return MAP_SPELLED_DIGITS[k]
 
 def find_last_digit(s, check_for_spelled_digits=True):
-    n_chars = len(s)
-
     for i in reversed(range(len(s))):
         if s[i] in digits:
             return int(s[i])
