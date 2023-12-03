@@ -1,7 +1,12 @@
-def get_coords_adj(x,y,xmax,ymax,length=1):
+from math import prod
+
+def get_coords_adj(coord,bounds,length=1):
     # Get list of surrounding adjacent coordinates to a (length,1) rectangle
-    # with origin x,y on a grid with bounds xmax,ymax
+    # with origin coord = x,y on a grid with bounds = xmax,ymax
     coords_adj = []
+
+    x,y = coord
+    xmax,ymax = bounds
 
     xend = x + length - 1
 
@@ -29,14 +34,38 @@ def get_coords_adj(x,y,xmax,ymax,length=1):
 
     return coords_adj
 
-class Gear:
+def get_array_bounds(charmap):
+    # Extent of 2D array "charmap"
+    xmax = len(charmap[0])-1
+    ymax = len(charmap)-1
+
+    return xmax, ymax
+
+class Star:
     def __init__(self, coord):
         self.coord = coord
 
-    def get_nums_adj(self, charmap):
-        coords_adj = []
-        nums_adj = []
+    def check_if_gear(self, charmap, parts):
+        coords_adj = get_coords_adj(self.coord, get_array_bounds(charmap))
+        nums_adj = [(x,y) for x,y in coords_adj if charmap[y][x].isnumeric()]
+        partid_adj = []
 
+        for coord in nums_adj:
+            x,y = coord
+            for k,part in enumerate(parts):
+                xpart,ypart = part.start
+                xpart_end = xpart + part.length - 1
+
+                if (y == ypart and x >= xpart and x <= xpart_end):
+                    partid_adj.append(k)
+    
+        unique_parts_adj = [parts[k] for k in set(partid_adj)]
+
+        if len(unique_parts_adj) == 2:
+            self.is_gear = True
+            self.gear_ratio = prod([part.val for part in unique_parts_adj])
+        else:
+            self.is_gear = False
 
 class Number:
     def __init__(self, s, coord_end):
@@ -46,13 +75,10 @@ class Number:
         self.length = len(s)
         self.start = (x+1-self.length, y)
 
-    def is_engine_part(self, charmap):
-        xmax = len(charmap[0])-1
-        ymax = len(charmap)-1
-        
+    def is_engine_part(self, charmap):        
         chars_adj = [
             charmap[y][x]
-            for x,y in get_coords_adj(*self.start, xmax, ymax, length=self.length)
+            for x,y in get_coords_adj(self.start, get_array_bounds(charmap), length=self.length)
         ]
         
         return any(c != '.' for c in chars_adj)
@@ -76,21 +102,27 @@ def parse_schematic_numbers(charmap):
             yield Number(str_number, (len(line)-1,y))
             str_number = ''
 
-def parse_schematic_gears(charmap):
-    for y,line in enumerate(charmap):
-        for x,c in enumerate(line):
-            if c == '*':
-                yield Gear((x,y))
+def parse_schematic_stars(charmap):
+    return [Star((x,y)) for y,line in enumerate(charmap) for x,c in enumerate(line) if c == '*'] 
 
 def run(data):
+    # Store schematic as 2D array of chars, and parse for number strings and stars (*)
     charmap = make_charmap(data)
+    numbers = list(parse_schematic_numbers(charmap))
+    stars = parse_schematic_stars(charmap)
 
-    numbers = parse_schematic_numbers(charmap)
-    # gears = parse_schematic_gears(charmap)
-    
+    # Identify engine parts
     engine_parts = [n for n in numbers if n.is_engine_part(charmap)]
 
-    return sum([part.val for part in engine_parts])
+    # Identify gears and populate gear ratios
+    for s in stars:
+        s.check_if_gear(charmap, engine_parts)
+    gears = [s for s in stars if s.is_gear]
+
+    return (
+        sum([part.val for part in engine_parts]),
+        sum([gear.gear_ratio for gear in gears])
+    )
 
 # Running script
 fp = "2023/inputs/day3"
