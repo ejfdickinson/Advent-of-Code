@@ -1,4 +1,4 @@
-from math import prod, sqrt, floor, ceil
+from math import prod, sqrt, floor, ceil, modf
 
 def parse_races(data, read_properly=True):
     if read_properly:
@@ -39,23 +39,32 @@ def count_winning_methods(race):
         # Quadratic has two real solutions - win cases are in the finite range between them
 
         # Get analytical solutions, rounded to closest integers
-        thold_lo = ceil( tmax/2 - sqrt((tmax/2) ** 2 - xmax))
-        thold_hi = floor(tmax/2 + sqrt((tmax/2) ** 2 - xmax))
-       
-        # Exact integer matches are ties - must beat the previous best!
-        tol = 1e-3
-        x_lo = (tmax - thold_lo) * thold_lo
-        x_hi = (tmax - thold_hi) * thold_hi
-        if abs(x_lo - xmax) < tol:
-            thold_lo += 1
-        if abs(x_hi - xmax) < tol:
-            thold_hi -= 1
+        half_range = sqrt((tmax/2) ** 2 - xmax)
+        thold_lo = fine_tune(tmax/2 - half_range, *race, assume_above=False)
+        thold_hi = fine_tune(tmax/2 + half_range, *race, assume_above=True)
 
         # Return number of integers in domain of win cases
         return (1 + thold_hi - thold_lo)
     else:
         # Quadratic has one or zero real solutions - can only tie or lose, even with perfect play
         return 0
+
+def fine_tune(tfloat, tmax, xmax, assume_above=True):
+    # For tfloat a root of tfloat * (tmax - tfloat) - xmax = 0,
+    # find nearest adjacent integer for which tfloat * (tmax - tfloat) > xmax
+
+    tfrac, tint = modf(tfloat)
+    if tfrac > 1e-10:
+        # Not an integer solution, use our intuition to know which side to round
+        if assume_above:
+            return floor(tfloat)
+        else:
+            return ceil(tfloat)
+    else:
+        # Seems likely that there is an integer tie, find the integer solution
+        for val in [tint-1, tint, tint+1]:
+            if val * (tmax - val) > xmax:
+                return val
 
 def run(data):
     bad_races = parse_races(data, read_properly=False)
