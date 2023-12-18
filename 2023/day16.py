@@ -1,3 +1,7 @@
+# TODO(ED): deal with memory / run-time inefficiency
+
+from copy import deepcopy
+
 class Space:
     def __init__(self, data):
         self.components, self.size = Space.parse_components(data)
@@ -81,10 +85,38 @@ class Ray:
 
 def run(data):
     space = Space(data)
-    space.trace_ray((-1, 0), (1, 0))
+    xmax, ymax = space.size
+
+    start_configs = []
+    # Left-hand side
+    start_configs.extend([
+        ((-1, y), (1, 0)) for y in range(ymax)
+    ])
+    # Top side
+    start_configs.extend([
+        ((x, -1), (0, 1)) for x in range(xmax)
+    ])
+    # Right-hand side
+    start_configs.extend([
+        ((xmax, y), (-1, 0)) for y in range(ymax)
+    ])
+    # Bottom side
+    start_configs.extend([
+        ((x, ymax), (0, -1)) for x in range(xmax)
+    ])
+
+    spaces = {
+        start_config: deepcopy(space) for start_config in start_configs
+    }
+
+    energized = []
+    for start_config, space in spaces.items():       
+        space.trace_ray(*start_config)
+        energized.append(len(space.energized))
 
     return (
-        len(space.energized)
+        energized[0],
+        max(energized)
     )
 
 # Running script
