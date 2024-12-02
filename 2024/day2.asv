@@ -33,13 +33,8 @@ function tf = issafe(report, opts)
 
     if ~tf && opts.use_dampener
         nlevels = length(report);
-        for exclude=1:nlevels
-            % Try without each level in turn
-            retain = setdiff(1:nlevels, exclude);
-            if issafe(report(retain))
-                tf = true;
-                return
-            end
+        for i=1:nlevels
+            if issafe(report(setdiff(1)))
         end
     end
 end
