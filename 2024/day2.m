@@ -4,9 +4,9 @@
 %%
 function [ans1, ans2] = compute_day2(dataloc)
     % Import and preamble
-    reports = readcell(dataloc, "Delimiter", ["\n"]);
-    reports = cellfun(...
-        @(x) double(split(string(x))), reports, 'UniformOutput', false);
+    reports = readlines(dataloc, 'EmptyLineRule', 'skip');
+    reports = arrayfun(...
+        @(x) double(split(x)), reports, 'UniformOutput', false);
 
     % Part 1
     safe_undamped = cellfun(@issafe, reports);
